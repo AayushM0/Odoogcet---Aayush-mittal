@@ -6,6 +6,16 @@ export interface LeaveBalances {
   paid: number;
 }
 
+export interface UserDocument {
+  _id: ObjectId;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploadedAt: Date;
+  uploadedBy: ObjectId;
+}
+
 export interface User {
   _id?: ObjectId;
   email: string;
@@ -18,6 +28,12 @@ export interface User {
   leaveBalances: LeaveBalances;
   joinDate: Date;
   isActive: boolean;
+  phone?: string;
+  address?: string;
+  department?: string;
+  position?: string;
+  profilePicture?: string;
+  documents?: UserDocument[];
   createdAt: Date;
   updatedAt: Date;
 }

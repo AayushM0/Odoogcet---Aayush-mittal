@@ -17,6 +17,13 @@ export async function GET() {
         role: user.role,
         leaveBalances: user.leaveBalances,
         baseSalary: user.baseSalary,
+        profilePicture: user.profilePicture,
+        phone: user.phone,
+        address: user.address,
+        department: user.department,
+        position: user.position,
+        joinDate: user.joinDate,
+        documents: user.documents,
       },
     });
   } catch (error) {

@@ -3,6 +3,23 @@
 import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  return new Date(d.setDate(diff));
+}
+
+function getWeekDates(startDate: Date): Date[] {
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    dates.push(date);
+  }
+  return dates;
+}
+
 export default function AttendancePage() {
   const [user, setUser] = useState<any>(null);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -10,8 +27,10 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
+  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
 
   useEffect(() => {
     fetchData();
@@ -74,6 +93,22 @@ export default function AttendancePage() {
     );
   };
 
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newStart = new Date(currentWeekStart);
+    newStart.setDate(newStart.getDate() + (direction === 'next' ? 7 : -7));
+    setCurrentWeekStart(newStart);
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges: any = {
+      present: 'bg-green-100 text-green-800',
+      absent: 'bg-red-100 text-red-800',
+      'half-day': 'bg-yellow-100 text-yellow-800',
+      late: 'bg-orange-100 text-orange-800',
+    };
+    return badges[status] || 'bg-gray-100 text-gray-800';
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -90,18 +125,45 @@ export default function AttendancePage() {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Attendance</h1>
           {user?.role === 'admin' && (
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+            <div className="flex items-center space-x-4">
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  onClick={() => setViewMode('daily')}
+                  className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
+                    viewMode === 'daily'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => setViewMode('weekly')}
+                  className={`px-4 py-2 text-sm font-medium rounded-r-md border-t border-r border-b ${
+                    viewMode === 'weekly'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Weekly
+                </button>
+              </div>
+              {viewMode === 'daily' && (
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              )}
+            </div>
           )}
         </div>
 
         {user?.role === 'admin' ? (
-          // Admin View
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          viewMode === 'daily' ? (
+            // Admin Daily View
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900">
                 Mark Attendance for {selectedDate}
@@ -200,6 +262,81 @@ export default function AttendancePage() {
               </table>
             </div>
           </div>
+          ) : (
+            // Admin Weekly View
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <button
+                  onClick={() => navigateWeek('prev')}
+                  className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  ← Previous Week
+                </button>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Week of {currentWeekStart.toLocaleDateString()}
+                </h3>
+                <button
+                  onClick={() => navigateWeek('next')}
+                  className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Next Week →
+                </button>
+              </div>
+              <div className="border-t border-gray-200 overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                        Employee
+                      </th>
+                      {getWeekDates(currentWeekStart).map((date, idx) => (
+                        <th
+                          key={idx}
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          <div>{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}</div>
+                          <div className="text-xs font-normal">
+                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {employees.map((employee) => (
+                      <tr key={employee._id}>
+                        <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10">
+                          <div className="text-sm font-medium text-gray-900">
+                            {employee.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {employee.email}
+                          </div>
+                        </td>
+                        {getWeekDates(currentWeekStart).map((date, idx) => {
+                          const dateStr = date.toISOString().split('T')[0];
+                          const dayAttendance = getAttendanceForDate(employee._id, dateStr);
+                          return (
+                            <td key={idx} className="px-6 py-4 whitespace-nowrap text-center">
+                              {dayAttendance ? (
+                                <span
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(dayAttendance.status)}`}
+                                >
+                                  {dayAttendance.status === 'half-day' ? 'Half' : dayAttendance.status.charAt(0).toUpperCase()}
+                                </span>
+                              ) : (
+                                <span className="text-gray-300">-</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
         ) : (
           // Employee View
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
