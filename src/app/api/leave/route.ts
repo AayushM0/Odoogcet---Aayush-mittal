@@ -24,6 +24,7 @@ export async function GET() {
           },
         },
         { $unwind: '$employee' },
+        // Sort by createdAt descending (newest first) - this ensures new leaves appear at top
         { $sort: { createdAt: -1 } },
       ]).toArray();
       

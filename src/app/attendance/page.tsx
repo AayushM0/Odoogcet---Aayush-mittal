@@ -34,9 +34,10 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedDate]);
+  }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const sessionRes = await fetch('/api/auth/session');
       const sessionData = await sessionRes.json();
@@ -72,14 +73,21 @@ export default function AttendancePage() {
       });
 
       if (res.ok) {
-        await fetchData();
-        alert('Attendance marked successfully');
+        // Refetch attendance data immediately
+        const attendanceRes = await fetch('/api/attendance');
+        const attendanceData = await attendanceRes.json();
+        setAttendance(attendanceData.attendance || []);
+        
+        // Show success message
+        const employeeName = employees.find(e => e._id === employeeId)?.name || 'Employee';
+        alert(`${employeeName} marked as ${status}`);
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to mark attendance');
+        alert('Error: ' + (data.error || 'Failed to mark attendance'));
       }
     } catch (error) {
-      alert('An error occurred');
+      console.error('Mark attendance error:', error);
+      alert('Error: An error occurred. Please try again.');
     } finally {
       setMarking(false);
     }
@@ -339,72 +347,153 @@ export default function AttendancePage() {
           )
         ) : (
           // Employee View
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                My Attendance History
-              </h3>
+          <>
+            {/* Month Summary */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">This Month Summary</h3>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm font-medium text-gray-600">Present</p>
+                  <p className="text-3xl font-bold text-green-600 mt-2">
+                    {attendance.filter(a => {
+                      const date = new Date(a.date);
+                      const now = new Date();
+                      return date.getMonth() === now.getMonth() && 
+                             date.getFullYear() === now.getFullYear() &&
+                             (a.status === 'present' || a.status === 'late');
+                    }).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">days</p>
+                </div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm font-medium text-gray-600">Half-Day</p>
+                  <p className="text-3xl font-bold text-yellow-600 mt-2">
+                    {attendance.filter(a => {
+                      const date = new Date(a.date);
+                      const now = new Date();
+                      return date.getMonth() === now.getMonth() && 
+                             date.getFullYear() === now.getFullYear() &&
+                             a.status === 'half-day';
+                    }).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">days</p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm font-medium text-gray-600">Absent</p>
+                  <p className="text-3xl font-bold text-red-600 mt-2">
+                    {attendance.filter(a => {
+                      const date = new Date(a.date);
+                      const now = new Date();
+                      return date.getMonth() === now.getMonth() && 
+                             date.getFullYear() === now.getFullYear() &&
+                             a.status === 'absent';
+                    }).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">days</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-gray-600">Total Records</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-2">
+                    {attendance.filter(a => {
+                      const date = new Date(a.date);
+                      const now = new Date();
+                      return date.getMonth() === now.getMonth() && 
+                             date.getFullYear() === now.getFullYear();
+                    }).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">days</p>
+                </div>
+              </div>
             </div>
-            <div className="border-t border-gray-200">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Check In
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Check Out
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {attendance.slice(0, 30).map((record) => (
-                    <tr key={record._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(record.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            record.status === 'present'
-                              ? 'bg-green-100 text-green-800'
-                              : record.status === 'absent'
-                              ? 'bg-red-100 text-red-800'
-                              : record.status === 'half-day'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-orange-100 text-orange-800'
-                          }`}
-                        >
-                          {record.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.checkIn
-                          ? new Date(record.checkIn).toLocaleTimeString()
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.checkOut
-                          ? new Date(record.checkOut).toLocaleTimeString()
-                          : '-'}
-                        {record.autoCheckedOut && (
-                          <span className="ml-2 text-xs text-gray-400">
-                            (auto)
-                          </span>
-                        )}
-                      </td>
+
+            {/* Attendance History */}
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  My Attendance History
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">Last 30 records</p>
+              </div>
+              <div className="border-t border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Check In
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Check Out
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {attendance.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                          No attendance records found
+                        </td>
+                      </tr>
+                    ) : (
+                      attendance.slice(0, 30).map((record) => (
+                        <tr key={record._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(record.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                record.status === 'present'
+                                  ? 'bg-green-100 text-green-800'
+                                  : record.status === 'absent'
+                                  ? 'bg-red-100 text-red-800'
+                                  : record.status === 'half-day'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}
+                            >
+                              {record.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {record.checkIn
+                              ? new Date(record.checkIn).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {record.checkOut
+                              ? new Date(record.checkOut).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : '-'}
+                            {record.autoCheckedOut && (
+                              <span className="ml-2 text-xs text-gray-400">
+                                (auto)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </Layout>

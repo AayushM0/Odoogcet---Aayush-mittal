@@ -182,5 +182,6 @@ export async function getLeavesForEmployee(employeeId: ObjectId): Promise<Leave[
 
 export async function getAllLeaves(): Promise<Leave[]> {
   const db = await getDb();
+  // Sort by createdAt descending (newest first)
   return db.collection<Leave>('leaves').find({}).sort({ createdAt: -1 }).toArray();
 }
