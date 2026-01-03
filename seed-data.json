@@ -1,0 +1,48 @@
+{
+  "description": "Dayflow HRMS Seed Data",
+  "users": {
+    "admin": {
+      "email": "admin@dayflow.com",
+      "password": "admin123",
+      "role": "admin",
+      "name": "Admin User"
+    },
+    "employees": [
+      {
+        "email": "john@dayflow.com",
+        "password": "password123",
+        "name": "John Doe",
+        "baseSalary": 50000
+      },
+      {
+        "email": "jane@dayflow.com",
+        "password": "password123",
+        "name": "Jane Smith",
+        "baseSalary": 55000
+      },
+      {
+        "email": "mike@dayflow.com",
+        "password": "password123",
+        "name": "Mike Johnson",
+        "baseSalary": 48000
+      },
+      {
+        "email": "sarah@dayflow.com",
+        "password": "password123",
+        "name": "Sarah Williams",
+        "baseSalary": 52000
+      },
+      {
+        "email": "david@dayflow.com",
+        "password": "password123",
+        "name": "David Brown",
+        "baseSalary": 51000
+      }
+    ]
+  },
+  "leaveBalances": {
+    "casual": 12,
+    "sick": 10,
+    "paid": 15
+  }
+}
